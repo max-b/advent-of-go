@@ -2,9 +2,11 @@ package day2
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
-
-	"github.com/max-b/advent-of-go/utils"
+	"os"
+	"strconv"
+	"strings"
 )
 
 func differsByOne(word1 string, word2 string) bool {
@@ -47,39 +49,88 @@ func has2OfSame(word string) bool {
 // Run - I'm a run function 🎉
 func Run() {
 	fmt.Println("Day 2")
-	has2Num := 0
-	has3Num := 0
+	fmt.Println("Part 1")
 
-	lines, err := utils.ReadInputToLines("./inputs/day2.txt")
+	opcodeArray, err := generateOpcodes()
 
 	if err != nil {
 		log.Fatal(err)
-		return
+		os.Exit(2)
 	}
 
-	for _, line := range lines {
+	result := getResult(opcodeArray, 12, 2)
 
-		has2, has3 := hasSomeOfSame(line)
+	fmt.Println(result)
 
-		if has2 {
-			has2Num++
-		}
-		if has3 {
-			has3Num++
-		}
+	fmt.Println("Part 2")
+	noun, verb, err := findNounVerb(opcodeArray)
+
+	fmt.Println(noun, verb)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(2)
 	}
 
-	fmt.Println("Part 1:")
-	fmt.Println(has2Num * has3Num)
+	fmt.Println(100*noun + verb)
+}
 
-	for _, line := range lines {
-		for _, otherLine := range lines {
-			if differsByOne(line, otherLine) {
-				fmt.Println("Part 2:")
-				fmt.Println(line)
-				fmt.Println(otherLine)
-				return
+func findNounVerb(opcodeArray []int) (int, int, error) {
+	for i := 0; i < 100; i++ {
+		for v := 0; v < 100; v++ {
+			opcodeArray, err := generateOpcodes()
+			if err != nil {
+				log.Fatal(err)
+			}
+			result := getResult(opcodeArray, i, v)
+			if result == 19690720 {
+				return i, v, nil
 			}
 		}
 	}
+	return 0, 0, nil
+}
+
+func generateOpcodes() ([]int, error) {
+
+	content, err := ioutil.ReadFile("./inputs/day2.txt")
+
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	var opcodeArray []int
+	opcodeStrings := strings.Split(strings.TrimSpace(string(content)), ",")
+
+	for _, v := range opcodeStrings {
+		number, err := strconv.Atoi(v)
+		if err != nil {
+			return nil, err
+		}
+		opcodeArray = append(opcodeArray, number)
+	}
+
+	return opcodeArray, nil
+}
+
+func getResult(opcodeArray []int, noun int, verb int) int {
+	opcodeArray[1] = noun
+	opcodeArray[2] = verb
+
+	startPos := 0
+	for {
+		if opcodeArray[startPos] == 99 {
+			break
+		}
+		storageField := opcodeArray[startPos+3]
+		first := opcodeArray[opcodeArray[startPos+1]]
+		second := opcodeArray[opcodeArray[startPos+2]]
+		if opcodeArray[startPos] == 1 {
+			opcodeArray[storageField] = first + second
+		} else if opcodeArray[startPos] == 2 {
+			opcodeArray[storageField] = first * second
+		}
+		startPos += 4
+	}
+	return opcodeArray[0]
 }
